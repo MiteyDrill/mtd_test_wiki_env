@@ -1,9 +1,9 @@
-name: Deploy Cextra Wiki to GitHub Pages
+name: Deploy Wiki to GitHub Pages
 
 on:
   push:
     branches:
-      - main # Change this to 'master' if your default branch uses the old naming
+      - main # Adjust to 'master' if needed
 
 permissions:
   contents: write
@@ -18,12 +18,28 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-level: '3.x'
+          python-version: '3.x'
 
       - name: Install MkDocs and Material Theme
         run: |
           pip install mkdocs mkdocs-material
 
+      - name: Prepare documentation structure
+        run: |
+          # 1. Create the dedicated child directory MkDocs wants
+          mkdir -p wiki_docs
+          
+          # 2. Copy all Markdown files and folders (excluding system directories) into it
+          # This handles folders synced by Wiki.js without moving them permanently
+          rsync -av --exclude='wiki_docs' --exclude='.git' --exclude='.github' ./ wiki_docs/
+          
+          # 3. Handle the home page naming fix inside the build folder
+          if [ -f "wiki_docs/home.md" ]; then
+            cp wiki_docs/home.md wiki_docs/index.md
+          fi
+
       - name: Build and Deploy to GitHub Pages
+        env:
+          NO_MKDOCS_2_WARNING: 1 # Disables the noisy log warning printed by the theme
         run: |
           mkdocs gh-deploy --force
