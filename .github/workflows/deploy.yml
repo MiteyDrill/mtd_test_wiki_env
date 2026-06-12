@@ -1,57 +1,51 @@
-name: Deploy HTML Wiki to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches:
-      - main # Adjust to 'master' if your branch name is different
+      - main # Change this to 'master' if that is your default branch name
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Assemble Static Site Folder
-        run: |
-          # 1. Create a clean build destination directory
-          mkdir -p public_site
-          
-          # 2. Copy your custom HTML folder paths into it
-          cp -r characters public_site/ 2>/dev/null || true
-          cp -r character_portraits public_site/ 2>/dev/null || true
-          
-          # 3. Only grab your images/svgs from assets (ignoring the software's node css/js)
-          mkdir -p public_site/assets
-          cp -r assets/img public_site/assets/ 2>/dev/null || true
-          cp -r assets/svg public_site/assets/ 2>/dev/null || true
-          
-          # 4. Convert home.html to index.html so it serves as your main landing page
-          if [ -f "home.html" ]; then
-            cp home.html public_site/index.html
-          fi
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Fix Subfolder Link Paths for GitHub Pages
-        run: |
-          # Find all HTML files in the built site directory and replace absolute root paths
-          # with your explicit GitHub repository subfolder path.
-          
-          # Fixes links pointing to '/characters/...' -> '/mtd_test_wiki_env/characters/...'
-          find public_site -type f -name "*.html" -exec sed -i 's|href="/characters/|href="/mtd_test_wiki_env/characters/|g' {} +
-          find public_site -type f -name "*.html" -exec sed -i 's|href="/character_portraits/|href="/mtd_test_wiki_env/character_portraits/|g' {} +
-          
-          # Fixes image paths pointing to '/assets/...' -> '/mtd_test_wiki_env/assets/...'
-          find public_site -type f -name "*.html" -exec sed -i 's|src="/assets/|src="/mtd_test_wiki_env/assets/|g' {} +
-          
-          # Fixes any links mapping directly back to the base root page '/' or '/home'
-          find public_site -type f -name "*.html" -exec sed -i 's|href="/"|href="/mtd_test_wiki_env/"|g' {} +
-          find public_site -type f -name "*.html" -exec sed -i 's|href="/home"|href="/mtd_test_wiki_env/"|g' {} +
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build # Make sure this script exists in your package.json
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Change "dist" to "build" or whatever folder your npm build script creates
+          path: './dist' 
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public_site
+        id: deployment
+        uses: actions/deploy-pages@v4
