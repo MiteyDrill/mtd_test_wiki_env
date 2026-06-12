@@ -3,7 +3,7 @@ name: Deploy HTML Wiki to GitHub Pages
 on:
   push:
     branches:
-      - main # Adjust to 'master' if needed
+      - main # Adjust to 'master' if your branch name is different
 
 permissions:
   contents: write
@@ -29,10 +29,26 @@ jobs:
           cp -r assets/img public_site/assets/ 2>/dev/null || true
           cp -r assets/svg public_site/assets/ 2>/dev/null || true
           
-          # 4. CRITICAL: Convert home.html to index.html so it serves as your main URL landing page
+          # 4. Convert home.html to index.html so it serves as your main landing page
           if [ -f "home.html" ]; then
             cp home.html public_site/index.html
           fi
+
+      - name: Fix Subfolder Link Paths for GitHub Pages
+        run: |
+          # Find all HTML files in the built site directory and replace absolute root paths
+          # with your explicit GitHub repository subfolder path.
+          
+          # Fixes links pointing to '/characters/...' -> '/mtd_test_wiki_env/characters/...'
+          find public_site -type f -name "*.html" -exec sed -i 's|href="/characters/|href="/mtd_test_wiki_env/characters/|g' {} +
+          find public_site -type f -name "*.html" -exec sed -i 's|href="/character_portraits/|href="/mtd_test_wiki_env/character_portraits/|g' {} +
+          
+          # Fixes image paths pointing to '/assets/...' -> '/mtd_test_wiki_env/assets/...'
+          find public_site -type f -name "*.html" -exec sed -i 's|src="/assets/|src="/mtd_test_wiki_env/assets/|g' {} +
+          
+          # Fixes any links mapping directly back to the base root page '/' or '/home'
+          find public_site -type f -name "*.html" -exec sed -i 's|href="/"|href="/mtd_test_wiki_env/"|g' {} +
+          find public_site -type f -name "*.html" -exec sed -i 's|href="/home"|href="/mtd_test_wiki_env/"|g' {} +
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
