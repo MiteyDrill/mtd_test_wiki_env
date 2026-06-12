@@ -1,0 +1,5 @@
+site_name: Cextra Wiki
+theme: material  # A beautiful, modern documentation theme
+
+nav:
+  - Home: index.md
