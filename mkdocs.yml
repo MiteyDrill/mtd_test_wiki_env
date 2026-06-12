@@ -3,4 +3,5 @@ theme:
   name: material # A clean, modern documentation theme
 plugins:
   - search     # Enables a built-in search bar
+  - awesome-pages   # Instantly finds and categorizes your markdown files automatically
 docs_dir: wiki_docs
