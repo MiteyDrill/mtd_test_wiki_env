@@ -1,4 +1,5 @@
 site_name: Cextra Wiki
+site_url: https://miteydrill.github.io  # <-- ADD THIS LINE (Replace with your actual URL)
 theme:
   name: material # A clean, modern documentation theme
 plugins:
