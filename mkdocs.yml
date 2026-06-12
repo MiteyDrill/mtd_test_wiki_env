@@ -3,4 +3,4 @@ theme:
   name: material # A clean, modern documentation theme
 plugins:
   - search     # Enables a built-in search bar
-docs_dir: .    # Tells MkDocs to look at the root folder for your markdown files
+docs_dir: wiki_docs
