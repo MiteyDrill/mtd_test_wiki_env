@@ -1,4 +1,4 @@
-name: Deploy Wiki to GitHub Pages
+name: Deploy HTML Wiki to GitHub Pages
 
 on:
   push:
@@ -15,31 +15,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Install MkDocs and Material Theme
+      - name: Assemble Static Site Folder
         run: |
-          pip install mkdocs mkdocs-material mkdocs-awesome-pages-plugin
-
-      - name: Prepare documentation structure
-        run: |
-          # 1. Create the dedicated child directory MkDocs wants
-          mkdir -p wiki_docs
+          # 1. Create a clean build destination directory
+          mkdir -p public_site
           
-          # 2. Copy all Markdown files and folders (excluding system directories) into it
-          # This handles folders synced by Wiki.js without moving them permanently
-          rsync -av --exclude='wiki_docs' --exclude='.git' --exclude='.github' ./ wiki_docs/
+          # 2. Copy your custom HTML folder paths into it
+          cp -r characters public_site/ 2>/dev/null || true
+          cp -r character_portraits public_site/ 2>/dev/null || true
           
-          # 3. Handle the home page naming fix inside the build folder
-          if [ -f "wiki_docs/home.md" ]; then
-            cp wiki_docs/home.md wiki_docs/index.md
+          # 3. Only grab your images/svgs from assets (ignoring the software's node css/js)
+          mkdir -p public_site/assets
+          cp -r assets/img public_site/assets/ 2>/dev/null || true
+          cp -r assets/svg public_site/assets/ 2>/dev/null || true
+          
+          # 4. CRITICAL: Convert home.html to index.html so it serves as your main URL landing page
+          if [ -f "home.html" ]; then
+            cp home.html public_site/index.html
           fi
 
-      - name: Build and Deploy to GitHub Pages
-        env:
-          NO_MKDOCS_2_WARNING: 1 # Disables the noisy log warning printed by the theme
-        run: |
-          mkdocs gh-deploy --force
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public_site
